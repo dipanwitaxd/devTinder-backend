@@ -1,0 +1,29 @@
+{
+  "name": "devtinder-backend",
+  "version": "1.0.0",
+  "description": "tinder like connection platform for developers",
+  "keywords": [
+    "node.js",
+    "javascript",
+    "backend"
+  ],
+  "homepage": "https://github.com/dipanwitaxd/devTinder-backend#readme",
+  "bugs": {
+    "url": "https://github.com/dipanwitaxd/devTinder-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dipanwitaxd/devTinder-backend.git"
+  },
+  "license": "ISC",
+  "author": "Dipanwita Mandal",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
