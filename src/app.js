@@ -1,21 +1,87 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
+const validator = require("validator");
+const cookieParser = require("cookie-parser");
+
 const connectDB = require("./config/database");
 const User = require("./models/user");
+const { userAuth } = require("./middleware/auth");
 
 const app = express();
+const { validateSignUpData } = require("./utils/validation");
 
 //converting all the data coming from the apis to readable JS object
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signUp", async (req, res) => {
-  //creating new instance of the user model using the data recieved from the api
-  const user = new User(req.body);
-
   try {
+    //data validation
+    validateSignUpData(req);
+
+    //encrypt the password
+    const { firstName, lastName, emailId, password } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    //creating new instance of the user model using the data recieved from the api
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
+    });
+
     await user.save();
     res.send("User saved successfully!");
   } catch (err) {
-    res.status(400).send("Error saving user data :: " + err);
+    res.status(400).send("Error :: " + err.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId: emailId });
+    if (!user) {
+      res.status(404).send("User not found");
+    }
+    if (!validator.isEmail(emailId)) throw new Error("Invalid Credentials");
+
+    const isPasswordValid = await user.validatePassword(password);
+
+    if (isPasswordValid) {
+      //create a JWT Token
+      const token = await user.getJWT();
+
+      //add the token in cookie and send the response to the user
+      res.cookie("token", token);
+
+      res.send("User Logged In succesfully!");
+    } else {
+      throw new Error("Invalid Credentials");
+    }
+  } catch (err) {
+    res.status(400).send("Error :: " + err.message);
+  }
+});
+
+//get profile
+app.get("/profile", userAuth, async (req, res) => {
+  try {
+    if (!req?.user) throw new Error("No user found");
+
+    res.send(req?.user);
+  } catch (err) {
+    res.status(400).send("Error :: " + err.message);
+  }
+});
+
+// send request
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  try {
+    res.send("Connection Requestion sent successfully!!");
+  } catch (err) {
+    res.status(400).send("Error :: " + err.message);
   }
 });
 
@@ -85,7 +151,6 @@ app.patch("/user/:userId", async (req, res) => {
     const isUpdateAllowed = Object.keys(data).every((item) =>
       ALLOWED_FEILDS_UPDATE.includes(item)
     );
-    console.log(req.body, isUpdateAllowed, userId);
     if (!isUpdateAllowed)
       throw new Error(
         "Some of the fields you are trying to update is not allowed"
