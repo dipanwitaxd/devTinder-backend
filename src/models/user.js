@@ -31,8 +31,10 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      match:
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#?!@$%^&*-])[A-Za-z\d@$!%*?&]{8,}$/,
+      validate: (value) => {
+        if (!validator.isStrongPassword(value))
+          throw new Error("Invalid Password : " + value);
+      },
     },
     age: {
       type: Number,
